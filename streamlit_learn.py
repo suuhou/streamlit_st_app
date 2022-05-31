@@ -13,6 +13,12 @@ add_selectbox = st.sidebar.selectbox\
     ("you can upload your own image from here!",
     ("watch a demo", "transform my image"))
 
+@st.cache(show_spinner=False)
+def load_local_image(url):
+    with urllib.request.urlopen(url) as response:
+        image = np.array(bytearray(response.read()), dtype='uint8')
+    return image
+
 if add_selectbox == "watch a demo":
     f"# Hi! im waiting for you! have fun!"
     f"#### this is a demo of the watercolor-style image generation app"
