@@ -30,28 +30,28 @@ if add_selectbox == "watch a demo":
     image_url = r'http://cz.coder17.com//suuhou/images_forfid_layernorm2/fake_{}.png'
     with r1c1:
         st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
-        st.image("images/fake_0026.png")
-        st.image("images/fake_0038.png")
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
     with r1c2:
-        st.image("images/fake_0050.png")
-        st.image("images/fake_0051.png")
-        st.image("images/fake_0091.png")
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
     with r1c3:
-        st.image("images/fake_0096.png")
-        st.image("images/fake_0101.png")
-        st.image("images/fake_0104.png")
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
     with r1c4:
-        st.image("images/fake_0107.png")
-        st.image("images/fake_0116.png")
-        st.image("images/fake_0146.png")
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
     with r1c5:
-        st.image("images/fake_0183.png")
-        st.image("images/fake_0214.png")
-        st.image("images/fake_0392.png")
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
     with r1c6:
-        st.image("images/fake_0405.png")
-        st.image("images/fake_0510.png")
-        st.image("images/fake_0522.png")
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
 
 if add_selectbox == "transform my image":
     r1col1, r1col2, r1col3 = st.columns([6, 1, 6])
