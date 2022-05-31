@@ -1,6 +1,8 @@
 import streamlit as st
 import numpy as np
 import urllib
+import requests
+import io
 from PIL import Image
 from testtest import main
 
@@ -15,8 +17,8 @@ add_selectbox = st.sidebar.selectbox\
 
 @st.cache(show_spinner=False)
 def load_local_image(url):
-    with urllib.request.urlopen(url) as response:
-        image = np.array(bytearray(response.read()), dtype='uint8')
+    image = requests.get(url)
+    image = np.array(bytearray(io.BytesIO(image.content())), dtype='uint8')
     return image
 
 if add_selectbox == "watch a demo":
