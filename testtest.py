@@ -107,6 +107,16 @@ def load_pth_from_url(url):
 
     return state_dict
 
+@st.cache(show_spinner=False)
+def load_local_image(uploaded_file):
+    bytes_data = uploaded_file.getvalue()
+    image = np.array(Image.open(io.BytesIO(bytes_data)))
+    return image
+
+uploaded_file = st.sidebar.file_uploader(" ")
+image = load_local_image(uploaded_file)
+
+
 def main(image):
     model = ConvNeXtGenerator_v2()
 

@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import urllib
 from PIL import Image
-from testtest import main
+from testtest import main, load_local_image
 
 st.set_page_config(page_title='watercolor-style image',
                    page_icon=None,
@@ -19,7 +19,7 @@ if add_selectbox == "watch a demo":
     "---"
     r1c1, r1c2, r1c3, r1c4, r1c5, r1c6 = st.columns([1,1,1,1,1,1])
     with r1c1:
-        st.image("images/fake_0018.png")
+        st.image(load_local_image(r'http://cz.coder17.com/suuhou/test_convnextv2_nopaper/images/0001_fake_B.png'))
         st.image("images/fake_0026.png")
         st.image("images/fake_0038.png")
     with r1c2:
