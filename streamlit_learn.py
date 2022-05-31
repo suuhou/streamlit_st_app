@@ -1,6 +1,9 @@
+import io
+
 import streamlit as st
 import numpy as np
 import urllib
+import requests
 from PIL import Image
 from testtest import main
 
@@ -15,9 +18,8 @@ add_selectbox = st.sidebar.selectbox\
 
 @st.cache(show_spinner=False)
 def load_local_image(url):
-    with urllib.request.urlopen(url) as response:
-        image = np.array(bytearray(response.read()), dtype='uint8')
-        print(image.shape)
+    resp = requests.get(url)
+    image = Image.open(io.BytesIO(resp.content))
     return image
 
 if add_selectbox == "watch a demo":
@@ -70,3 +72,6 @@ if add_selectbox == "transform my image":
                 st.write("here you are!")
         else:
             st.write("Please upload a image in JPG/PNG Format.")
+
+if __name__ == '__main__':
+    load_local_image(r'http://cz.coder17.com/suuhou/test_convnextv2_nopaper/images/0001_fake_B.png')
