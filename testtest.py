@@ -113,9 +113,6 @@ def load_local_image(url):
         image = np.array(bytearray(response.read()), dtype='uint8')
     return image
 
-uploaded_file = st.sidebar.file_uploader(" ")
-image = load_local_image(uploaded_file)
-
 
 def main(image):
     model = ConvNeXtGenerator_v2()
