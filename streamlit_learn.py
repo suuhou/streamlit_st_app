@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import urllib
 from PIL import Image
-from testtest import main, #load_local_image
+from testtest import main
 
 st.set_page_config(page_title='watercolor-style image',
                    page_icon=None,
