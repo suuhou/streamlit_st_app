@@ -1,5 +1,5 @@
 import io
-
+import random
 import streamlit as st
 import numpy as np
 import urllib
@@ -27,9 +27,9 @@ if add_selectbox == "watch a demo":
     f"#### this is a demo of the watercolor-style image generation app"
     "---"
     r1c1, r1c2, r1c3, r1c4, r1c5, r1c6 = st.columns([1,1,1,1,1,1])
+    image_url = r'http://cz.coder17.com/suuhou/test_convnextv2_nopaper/images/{}_fake_B.png'
     with r1c1:
-        st.image(load_local_image(r'http://cz.coder17.com/suuhou/test_convnextv2_nopaper/images/{}_fake_B.png'.format("0002")))
-        #st.image("images/fake_0026.png")
+        st.image(load_local_image(image_url.format(str(random.randint(2000,4000)))))
         st.image("images/fake_0026.png")
         st.image("images/fake_0038.png")
     with r1c2:
