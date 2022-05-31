@@ -110,7 +110,7 @@ def load_pth_from_url(url):
 @st.cache(show_spinner=False)
 def load_local_image(url):
     with urllib.request.urlopen(url) as response:
-        image = np.array(Image.open(io.BytesIO(response.read())))
+        image = np.array(bytearray(response.read()), dtype='uint8')
     return image
 
 uploaded_file = st.sidebar.file_uploader(" ")
