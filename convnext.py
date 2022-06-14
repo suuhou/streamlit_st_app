@@ -4,64 +4,26 @@ import torch.nn.functional as F
 from timm.models.layers import trunc_normal_, DropPath
 from timm.models.registry import register_model
 
-class Block(nn.Module):
-    r""" ConvNeXt Block. There are two equivalent implementations:
-    (1) DwConv -> LayerNorm (channels_first) -> 1x1 Conv -> GELU -> 1x1 Conv; all in (N, C, H, W)
-    (2) DwConv -> Permute to (N, H, W, C); LayerNorm (channels_last) -> Linear -> GELU -> Linear; Permute back
-    We use (2) as we find it slightly faster in PyTorch
+class ConvNeXtGenerator(nn.Module):
 
-    Args:
-        dim (int): Number of input channels.
-        drop_path (float): Stochastic depth rate. Default: 0.0
-        layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
-    """
-
-    def __init__(self, dim, drop_path=0., layer_scale_init_value=1e-6, remove_norm = False):
-        super().__init__()
-        self.dwconv = nn.Sequential(nn.ReflectionPad2d(3), nn.Conv2d(dim, dim, kernel_size=7, padding=0, groups=dim)) # depthwise conv
-        #self.norm = LayerNorm(dim, eps=1e-6)
-        self.norm = nn.Identity() if remove_norm else nn.InstanceNorm2d(dim)
-        self.pwconv1 = nn.Linear(dim, 4 * dim)  # pointwise/1x1 convs, implemented with linear layers
-        self.act = nn.GELU()
-        self.pwconv2 = nn.Linear(4 * dim, dim)
-        self.gamma = nn.Parameter(layer_scale_init_value * torch.ones((dim)),
-                                  requires_grad=True) if layer_scale_init_value > 0 else None
-        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-
-    def forward(self, x):
-        input = x
-        x = self.dwconv(x)
-        x = x.permute(0, 2, 3, 1)  # (N, C, H, W) -> (N, H, W, C)
-        x = self.norm(x)
-        x = self.pwconv1(x)
-        x = self.act(x)
-        x = self.pwconv2(x)
-        if self.gamma is not None:
-            x = self.gamma * x
-        x = x.permute(0, 3, 1, 2)  # (N, H, W, C) -> (N, C, H, W)
-
-        x = input + self.drop_path(x)
-        return x
-
-class ConvNeXtGenerator_v2(nn.Module):
-
-    def __init__(self, input_nc=3):
-        super(ConvNeXtGenerator_v2, self).__init__()
+    def __init__(self, input_nc=9):
+        super(ConvNeXtGenerator, self).__init__()
 
 
         self.first = nn.Sequential(nn.ReflectionPad2d(3), nn.Conv2d(input_nc, 64, 7, padding=0), nn.ReLU(True))
         ### downsample
         self.down = downsampling_layers(input_nc=64, dims=[128,256,512,1024],
-                                        drop_path_rate=0., depths=[3,3,4,3], layer_scale_init_value=1e-6)
+                                        drop_path_rate=0., depths=[1,1,1,1], layer_scale_init_value=1e-6) #0,0,0,0   1,1,1,1  3,3,4,3
 
         ### map blocks
-        self.map = mapping_layers(1024, 1024, 3)
+        self.map = mapping_layers(1024, 3)
 
         ### upsample
         self.up = upsampling_layers(dims=[512,256,128,64], drop_path_rate=0.,
-                                    depths=[3,3,4,3], layer_scale_init_value=1e-6)
+                                    depths=[1,1,1,1], layer_scale_init_value=1e-6)
 
         self.last = nn.Sequential(nn.ReflectionPad2d(3), nn.Conv2d(64, 3, (7, 7), padding=0), nn.Tanh())
+
 
     def forward(self, input):
 
@@ -69,12 +31,9 @@ class ConvNeXtGenerator_v2(nn.Module):
         real_low = self.down(input)
         fake_low = self.map(real_low[-1])
         fake = self.up(fake_low, real_low)
-        fake = self.last(fake)
+        out = self.last(fake)
 
-        # if is_render:
-        #     fake = fake*canvas
-
-        return fake
+        return out
 
 class downsampling_layers(nn.Module):
 
@@ -116,12 +75,20 @@ class downsampling_layers(nn.Module):
 
 class mapping_layers(nn.Module):
 
-    def __init__(self, input_nc, output_nc, num_layers):
+    def __init__(self, input_nc, num_layers):
         super(mapping_layers, self).__init__()
 
         self.mapping_layers = nn.ModuleList()
-        for _ in range(num_layers):
-            self.mapping_layers.append(nn.Sequential(nn.Conv2d(input_nc, output_nc, (1,1), (1,1)), nn.LeakyReLU(0.02, True)))
+        self.input_nc = input_nc
+        self.num_layers = num_layers
+
+        self.build_layers()
+
+    def build_layers(self):
+
+        for _ in range(self.num_layers):
+            self.mapping_layers.append(
+                nn.Sequential(nn.Conv2d(self.input_nc, self.input_nc, (1, 1), (1, 1)), nn.LeakyReLU(0.02, True)))
 
     def forward(self, x):
 
@@ -156,6 +123,7 @@ class upsampling_layers(nn.Module):
             cur += depths[i]
 
     def forward(self, x, downsampled_xs):
+
         index = [i for i in range(4)]
         for i, layer, convnext_block in zip(index, self.up, self.stages):
             x = convnext_block(layer(x, downsampled_xs[3-i]))
@@ -170,15 +138,16 @@ class DeConvBlock(nn.Module):
         self.outer = outer
         self.deconv_layer = self.bulid_layer(in_nc, out_nc)
 
-
     def bulid_layer(self, in_nc, out_nc):
 
         deconv = []
-        deconv += [nn.Upsample(scale_factor=2)] if not self.outer else [nn.Upsample([512,512])]
+        deconv += [nn.Upsample(scale_factor=2)] #if not self.outer else [nn.Upsample([512,512])]
         deconv += [nn.ReflectionPad2d(1)]
         deconv += [nn.Conv2d(in_nc, out_nc, (3,3), (1,1), padding=0)]
         #deconv += [nn.InstanceNorm2d(out_nc)]
+        #deconv += [LayerNorm(out_nc, eps=1e-6, data_format="channels_first")] if not self.inner else []
         deconv += [nn.ReLU(True)]
+        #deconv += [nn.LeakyReLU(0.02, True)]
 
         return nn.Sequential(*deconv)
 
@@ -190,9 +159,46 @@ class DeConvBlock(nn.Module):
             out = torch.cat([x, downsampled_x], dim=1)
             out = self.deconv_layer(out)
 
-
         return out
 
+class Block(nn.Module):
+    r""" ConvNeXt Block. There are two equivalent implementations:
+    (1) DwConv -> LayerNorm (channels_first) -> 1x1 Conv -> GELU -> 1x1 Conv; all in (N, C, H, W)
+    (2) DwConv -> Permute to (N, H, W, C); LayerNorm (channels_last) -> Linear -> GELU -> Linear; Permute back
+    We use (2) as we find it slightly faster in PyTorch
+
+    Args:
+        dim (int): Number of input channels.
+        drop_path (float): Stochastic depth rate. Default: 0.0
+        layer_scale_init_value (float): Init value for Layer Scale. Default: 1e-6.
+    """
+
+    def __init__(self, dim, drop_path=0., layer_scale_init_value=1e-6, remove_norm = False):
+        super().__init__()
+        self.dwconv = nn.Sequential(nn.ReflectionPad2d(3), nn.Conv2d(dim, dim, kernel_size=7, padding=0, groups=dim)) # depthwise conv
+        self.norm = nn.Identity() if remove_norm else LayerNorm(dim, eps=1e-6)  ########
+        self.pwconv1 = nn.Linear(dim, 4 * dim)  # pointwise/1x1 convs, implemented with linear layers
+        self.act = nn.GELU()
+        self.pwconv2 = nn.Linear(4 * dim, dim)
+        self.gamma = nn.Parameter(layer_scale_init_value * torch.ones((dim)),
+                                  requires_grad=True) if layer_scale_init_value > 0 else None
+        self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+
+    def forward(self, x):
+
+        input = x
+        x = self.dwconv(x)
+        x = x.permute(0, 2, 3, 1)  # (N, C, H, W) -> (N, H, W, C)
+        x = self.norm(x)
+        x = self.pwconv1(x)
+        x = self.act(x)
+        x = self.pwconv2(x)
+        if self.gamma is not None:
+            x = self.gamma * x
+        x = x.permute(0, 3, 1, 2)  # (N, H, W, C) -> (N, C, H, W)
+        x = input + self.drop_path(x)
+
+        return x
 
 class LayerNorm(nn.Module):
 
@@ -218,6 +224,19 @@ class LayerNorm(nn.Module):
 
 
 if __name__ == '__main__':
+
+    net = ConvNeXtGenerator().cuda()
+
+    x = torch.rand([1, 9, 1520, 992]).cuda()
+    y = net(x)
+
+    num_params = 0
+    for param in net.parameters():
+        num_params += param.numel()
+
+    print('[Network %s] Total number of parameters : %.3f M' % ('convnext', num_params / 1e6))
+    print(y.shape)
+
     # net = ConvNeXt(depths=[3, 3, 27, 3], dims=[128, 256, 512, 1024])
     # x = torch.rand([1,3,512,512])
     # y = net(x)
@@ -234,7 +253,4 @@ if __name__ == '__main__':
     # out = d(x)
     # for y in out:
     #     print(y.shape)
-    net = ConvNeXtGenerator_v2().cuda()
-    x = torch.rand([1,3,512,512]).cuda()
-    y = net(x)
-    print(y.shape)
+

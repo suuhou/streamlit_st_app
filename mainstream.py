@@ -4,34 +4,33 @@ import urllib
 import io
 import streamlit as st
 import torchvision.transforms as transforms
-from convnext_v2 import *
+from convnext import *
 from PIL import Image
 
-def get_params(size):
+def get_size(size, div = 16):
+
+    def find_closest(s):
+        q_ = int(s / div)
+        s1 = div * q_
+        s2 = div * (q_ + 1)
+        fine_s = s1 if abs(s-s1) < abs(s-s2) else s2
+        return fine_s
+
     w, h = size
-    new_h = h
-    new_w = w
+    new_w = find_closest(w)
+    new_h = find_closest(h)
 
-    x = random.randint(0, np.maximum(0, new_w - 512))
-    y = random.randint(0, np.maximum(0, new_h - 512))
-
-    flip = random.random() > 0.5
-
-    return {'crop_pos': (x, y), 'flip': flip}
+    return [new_h, new_w]
 
 
-def get_transform(params=None, grayscale=False, method=Image.BICUBIC, convert=True):
+def get_transform(osize, grayscale=False, method=Image.BICUBIC, convert=True):
     transform_list = []
     if grayscale:
         transform_list.append(transforms.Grayscale(1))
 
-    osize = [512, 512]
     transform_list.append(transforms.Resize(osize, method))
 
-    if params is None:
-        transform_list.append(transforms.RandomCrop(512))
-    else:
-        transform_list.append(transforms.Lambda(lambda img: __crop(img, params['crop_pos'], 512)))
+    #transform_list.append(transforms.Lambda(lambda img: __make_power_2(img, base=16, method=method)))
 
     if convert:
         transform_list += [transforms.ToTensor()]
@@ -39,6 +38,7 @@ def get_transform(params=None, grayscale=False, method=Image.BICUBIC, convert=Tr
             transform_list += [transforms.Normalize((0.5,), (0.5,))]
         else:
             transform_list += [transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
+
     return transforms.Compose(transform_list)
 
 def __make_power_2(img, base, method=Image.BICUBIC):
@@ -77,10 +77,10 @@ def __flip(img, flip):
 def __print_size_warning(ow, oh, w, h):
     """Print warning information about image size(only print once)"""
     if not hasattr(__print_size_warning, 'has_printed'):
-        print("The image size needs to be a multiple of 4. "
+        print("The image size needs to be a multiple of 16. "
               "The loaded image size was (%d, %d), so it was adjusted to "
               "(%d, %d). This adjustment will be done to all images "
-              "whose sizes are not multiples of 4" % (ow, oh, w, h))
+              "whose sizes are not multiples of 16" % (ow, oh, w, h))
         __print_size_warning.has_printed = True
 
 def tensor2im(input_image, imtype=np.uint8):
@@ -99,13 +99,33 @@ def tensor2im(input_image, imtype=np.uint8):
     return image_numpy.astype(imtype)
 
 
-@st.cache(show_spinner=False)
-def load_pth_from_url(url):
+@st.cache(show_spinner=False, allow_output_mutation=True)
+def load_pth_from_url():
 
-    with urllib.request.urlopen(url) as response:
+    load_path = r'http://cz.coder17.com/suuhou/concatcanvas2_layernorm_pth/latest_net_G.pth'
+    with urllib.request.urlopen(load_path) as response:
         state_dict = torch.load(io.BytesIO(response.read()))
 
     return state_dict
+
+@st.cache(show_spinner=False)
+def load_local_canvas():
+
+    height_paper_path = r'E:/python_work/streamlit_app_repo/streamlit_app/images/height_1000_2.png'
+    texture_paer_path = r'E:/python_work/streamlit_app_repo/streamlit_app/images/paper_1000_2.png'
+
+    height_paper = Image.open(height_paper_path).convert('RGB')
+    texture_paer = Image.open(texture_paer_path).convert('RGB')
+
+    return height_paper, texture_paer
+
+def load_local_image():
+
+    image_url = r'http://cz.coder17.com//suuhou/images_forfid_layernorm2/fake_{}.png'
+    image_list = [image_url.format(str(random.randint(2000, 4000))) for _ in range(18)]
+
+    return image_list
+
 
 # @st.cache(show_spinner=False)
 # def load_local_image(url):
@@ -115,12 +135,14 @@ def load_pth_from_url(url):
 
 
 def main(image):
-    model = ConvNeXtGenerator_v2()
 
-    load_path = r'http://cz.coder17.com/suuhou/convnext_v2_pth/latest_net_G.pth'
-    state_dict = load_pth_from_url(load_path)
+    model = ConvNeXtGenerator()
+
+    state_dict = load_pth_from_url()
+    height_paper, texture_paer = load_local_canvas()
 
     net = model
+
     if isinstance(model, torch.nn.DataParallel):
         net = model.module
     if hasattr(state_dict, '_metadata'):
@@ -128,15 +150,34 @@ def main(image):
 
     net.load_state_dict(state_dict)
 
-    transform_params = get_params(image.size)
-    transformation = get_transform(transform_params, grayscale=False)
-    tensor_image = transformation(image).unsqueeze(0)
+    new_size = get_size(image.size)
+    transformation = get_transform(new_size, grayscale=False)
+    input = transformation(image).unsqueeze(0)
+    canvas_height = transformation(height_paper).unsqueeze(0)
+    canvas_paper = transformation(texture_paer).unsqueeze(0)
+    tensor_images = [input, canvas_height, canvas_paper]
 
     with torch.no_grad():
-        fake_b = model(tensor_image)
+        fake_b = model(torch.cat(tensor_images, dim=1))
 
     np_image = tensor2im(fake_b, imtype=np.uint8)
-    print(fake_b.shape)
     image_pil = Image.fromarray(np_image)
 
     return image_pil
+
+if __name__ == '__main__':
+    image = Image.open(r'E:\python_work\streamlit_app_repo\streamlit_app\test2.png').convert('RGB')
+    print('osize', image.size)
+
+    new_image = main(image)
+    print('new_size', image.size)
+
+    # t = transforms.ToTensor()
+    # t2 = transforms.ToPILImage()
+    #
+    # tensor_image = t(image)
+    # print('tensor_image.shape', tensor_image.shape)
+    #
+    # back_image = t2(tensor_image)
+    # print('back_image', back_image.size)
+
