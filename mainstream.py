@@ -111,8 +111,13 @@ def load_pth_from_url():
 @st.cache(show_spinner=False)
 def load_local_canvas():
 
-    height_paper_path = r'E:/python_work/streamlit_app_repo/streamlit_app/images/height_1000_2.png'
-    texture_paer_path = r'E:/python_work/streamlit_app_repo/streamlit_app/images/paper_1000_2.png'
+    height_paper_path = r'./images/height_1000_2.png'
+    texture_paer_path = r'./images/paper_1000_2.png'
+
+    # with urllib.request.urlopen(height_paper_path) as response:
+    #     byt_height = np.array(bytearray(response.read()), dtype='uint8')
+    # with urllib.request.urlopen(texture_paer_path) as response:
+    #     byt_paper = np.array(bytearray(response.read()), dtype='uint8')
 
     height_paper = Image.open(height_paper_path).convert('RGB')
     texture_paer = Image.open(texture_paer_path).convert('RGB')
