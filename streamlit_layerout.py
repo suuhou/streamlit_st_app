@@ -5,7 +5,7 @@ import numpy as np
 import urllib
 import requests
 from PIL import Image
-from mainstream import main, load_local_image, generate_local_image
+from mainstream import main, load_local_image
 
 st.set_page_config(page_title='watercolor-style image',
                    page_icon=None,
