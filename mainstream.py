@@ -124,12 +124,7 @@ def load_local_canvas():
 
     return height_paper, texture_paer
 
-def load_local_image():
 
-    image_url = r'http://cz.coder17.com//suuhou/images_forfid_layernorm2/fake_{}.png'
-    image_list = [image_url.format(str(random.randint(2000, 4000))) for _ in range(18)]
-
-    return image_list
 
 
 # @st.cache(show_spinner=False)

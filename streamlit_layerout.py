@@ -5,7 +5,7 @@ import numpy as np
 import urllib
 import requests
 from PIL import Image
-from mainstream import main, load_local_image
+from mainstream import main
 
 st.set_page_config(page_title='watercolor-style image',
                    page_icon=None,
@@ -16,6 +16,12 @@ add_selectbox = st.sidebar.selectbox\
     ("you can upload your own image from here!",
     ("watch a demo", "transform my image"))
 
+def load_local_image():
+
+    image_url = r'http://cz.coder17.com//suuhou/images_forfid_layernorm2/fake_{}.png'
+    image_list = [image_url.format(str(random.randint(2000, 4000))) for _ in range(18)]
+
+    return image_list
 
 if add_selectbox == "watch a demo":
     f"# Hi! im waiting for you! have fun!"
