@@ -25,7 +25,7 @@ if add_selectbox == "watch a demo":
     image_list = load_local_image()
 
     with r1c1:
-        st.image(Image.open(image_list[0]))
+        st.image(image_list[0])
         st.image(image_list[1])
         st.image(image_list[2])
     with r1c2:
