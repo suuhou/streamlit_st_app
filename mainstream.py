@@ -2,6 +2,7 @@ import random
 import numpy as np
 import urllib
 import io
+import requests
 import streamlit as st
 import torchvision.transforms as transforms
 from convnext import *
@@ -126,9 +127,11 @@ def load_local_image():
     image_index_list = [image_url.format(str(random.randint(2000, 4000))) for _ in range(18)]
     image_list = []
     for url in image_index_list:
-        with urllib.request.urlopen(url) as response:
-            image = np.array(bytearray(response.read()), dtype='uint8')
-            image_list.append(image)
+        # with urllib.request.urlopen(url) as response:
+        #     image = np.array(bytearray(response.read()), dtype='uint8')
+        resp = requests.get(url)
+        image = Image.open(io.BytesIO(resp.content))
+        image_list.append(image)
 
     return image_list
 
