@@ -165,19 +165,4 @@ def main(image):
 
     return image_pil
 
-if __name__ == '__main__':
-    image = Image.open(r'E:\python_work\streamlit_app_repo\streamlit_app\test2.png').convert('RGB')
-    print('osize', image.size)
-
-    new_image = main(image)
-    print('new_size', image.size)
-
-    # t = transforms.ToTensor()
-    # t2 = transforms.ToPILImage()
-    #
-    # tensor_image = t(image)
-    # print('tensor_image.shape', tensor_image.shape)
-    #
-    # back_image = t2(tensor_image)
-    # print('back_image', back_image.size)
 
