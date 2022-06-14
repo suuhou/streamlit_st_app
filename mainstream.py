@@ -114,24 +114,23 @@ def load_local_canvas():
     height_paper_path = r'./images/height_1000_2.png'
     texture_paer_path = r'./images/paper_1000_2.png'
 
-    # with urllib.request.urlopen(height_paper_path) as response:
-    #     byt_height = np.array(bytearray(response.read()), dtype='uint8')
-    # with urllib.request.urlopen(texture_paer_path) as response:
-    #     byt_paper = np.array(bytearray(response.read()), dtype='uint8')
-
     height_paper = Image.open(height_paper_path).convert('RGB')
     texture_paer = Image.open(texture_paer_path).convert('RGB')
 
     return height_paper, texture_paer
 
 
+def load_local_image():
 
+    image_url = r'http://cz.coder17.com//suuhou/images_forfid_layernorm2/fake_{}.png'
+    image_index_list = [image_url.format(str(random.randint(2000, 4000))) for _ in range(18)]
+    image_list = []
+    for url in image_index_list:
+        with urllib.request.urlopen(url) as response:
+            image = np.array(bytearray(response.read()), dtype='uint8')
+            image_list.append(image)
 
-# @st.cache(show_spinner=False)
-# def load_local_image(url):
-#     with urllib.request.urlopen(url) as response:
-#         image = np.array(bytearray(response.read()), dtype='uint8')
-#     return image
+    return image_list
 
 
 def main(image):
