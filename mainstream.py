@@ -120,7 +120,7 @@ def load_local_canvas():
 
     return height_paper, texture_paer
 
-
+@st.cache(show_spinner=False)
 def load_local_image():
 
     image_url = r'http://cz.coder17.com//suuhou/images_forfid_layernorm2/fake_{}.png'
